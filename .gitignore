@@ -1,3 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+*.jsonl
+data/processed/*
+!data/processed/README.md  # if you want to keep a placeholder
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

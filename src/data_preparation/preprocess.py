@@ -4,24 +4,32 @@ import pandas as pd
 import json
 import os
 
-INPUT_PATH = 'data/raw/cs.tsv'
-OUTPUT_PATH = 'data/processed/stackexchange_cs.jsonl'
+DATASETS = {
+    "cs": "data/raw/cs.tsv",
+    "politics": "data/raw/p.tsv",
+    "datascience": "data/raw/ds.tsv"
+}
 
-def preprocess_and_save(input_path, output_path):
-    df = pd.read_csv(input_path, sep='\t')
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        for _, row in df.iterrows():
-            entry = {
-                'id': row['id'],
-                'title': row['title'],
-                'body': row['body'],
-                'tags': row['tags'],
-                'label': int(row['label'])  # Convert to int for safety
-            }
-            f.write(json.dumps(entry) + '\n')
+os.makedirs("data/processed", exist_ok=True)
 
-if __name__ == '__main__':
-    preprocess_and_save(INPUT_PATH, OUTPUT_PATH)
+all_entries = []
 
+for domain, path in DATASETS.items():
+    df = pd.read_csv(path, sep="\t")
+    df = df.dropna(subset=["title", "body"])  # Drop incomplete entries
+    for _, row in df.iterrows():
+        entry = {
+            "id": int(row["id"]),
+            "title": str(row["title"]),
+            "body": str(row["body"]),
+            "tags": str(row.get("tags", "")),
+            "label": int(row.get("label", -1)),
+            "source": domain
+        }
+        all_entries.append(entry)
+
+with open("data/processed/combined.jsonl", "w", encoding="utf-8") as f:
+    for item in all_entries:
+        f.write(json.dumps(item) + "\n")
+
+print(f"✅ Combined {len(all_entries)} entries into data/processed/combined.jsonl")

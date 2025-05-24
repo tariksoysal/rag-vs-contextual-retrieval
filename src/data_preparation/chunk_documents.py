@@ -2,37 +2,33 @@
 
 import json
 import os
+from tqdm import tqdm
 
-INPUT_PATH = 'data/processed/stackexchange_cs.jsonl'
-OUTPUT_PATH = 'data/processed/chunked_documents.jsonl'
-CHUNK_SIZE = 150  # words
-OVERLAP = 30      # optional overlap for better context
+INPUT_FILE = "data/processed/combined.jsonl"
+OUTPUT_FILE = "data/processed/chunked_documents.jsonl"
+CHUNK_SIZE = 300  # Approximate number of words per chunk
 
-def chunk_text(text, chunk_size, overlap):
+def chunk_text(text, size=CHUNK_SIZE):
     words = text.split()
-    chunks = []
-    for i in range(0, len(words), chunk_size - overlap):
-        chunk = ' '.join(words[i:i + chunk_size])
-        chunks.append(chunk)
-    return chunks
+    return [' '.join(words[i:i+size]) for i in range(0, len(words), size)]
 
-def process_documents(input_path, output_path):
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(input_path, 'r', encoding='utf-8') as infile, \
-         open(output_path, 'w', encoding='utf-8') as outfile:
-        for line in infile:
-            item = json.loads(line)
-            full_text = item['title'] + '\n' + item['body']
-            chunks = chunk_text(full_text, CHUNK_SIZE, OVERLAP)
-            for i, chunk in enumerate(chunks):
-                chunk_entry = {
-                    'id': f"{item['id']}_{i}",
-                    'chunk': chunk,
-                    'tags': item['tags'],
-                    'label': item['label']
-                }
-                outfile.write(json.dumps(chunk_entry) + '\n')
+os.makedirs("data/processed", exist_ok=True)
 
-if __name__ == '__main__':
-    process_documents(INPUT_PATH, OUTPUT_PATH)
+with open(INPUT_FILE, "r", encoding="utf-8") as infile, \
+     open(OUTPUT_FILE, "w", encoding="utf-8") as outfile:
 
+    for line in tqdm(infile, desc="Chunking documents"):
+        item = json.loads(line)
+        full_text = f"{item['title']} {item['body']}"
+        chunks = chunk_text(full_text)
+
+        for idx, chunk in enumerate(chunks):
+            chunked_entry = {
+                "id": item["id"],
+                "chunk": chunk,
+                "chunk_id": idx,
+                "source": item["source"]  # keep track of origin (cs, p, ds)
+            }
+            outfile.write(json.dumps(chunked_entry) + "\n")
+
+print(f"✅ Saved chunked output to {OUTPUT_FILE}")

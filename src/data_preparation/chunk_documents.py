@@ -1,34 +1,50 @@
-# src/data_preparation/chunk_documents.py
-
 import json
-import os
+import re
+import sys
 from tqdm import tqdm
 
-INPUT_FILE = "data/processed/combined.jsonl"
-OUTPUT_FILE = "data/processed/chunked_documents.jsonl"
-CHUNK_SIZE = 300  # Approximate number of words per chunk
+# Defaults (fallback if not provided as CLI args)
+DEFAULT_INPUT_PATH = "data/processed/combined.jsonl"
+DEFAULT_OUTPUT_PATH = "data/processed/chunked_documents.jsonl"
 
-def chunk_text(text, size=CHUNK_SIZE):
-    words = text.split()
-    return [' '.join(words[i:i+size]) for i in range(0, len(words), size)]
+CHUNK_SIZE = 1000  # characters
 
-os.makedirs("data/processed", exist_ok=True)
+def clean_html(text):
+    text = re.sub(r'<[^>]+>', '', text)  # remove HTML tags
+    text = re.sub(r'&#xA;|&nbsp;', ' ', text)  # replace common HTML entities
+    return text.strip()
 
-with open(INPUT_FILE, "r", encoding="utf-8") as infile, \
-     open(OUTPUT_FILE, "w", encoding="utf-8") as outfile:
+def chunk_text(text, chunk_size=CHUNK_SIZE):
+    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
-    for line in tqdm(infile, desc="Chunking documents"):
-        item = json.loads(line)
-        full_text = f"{item['title']} {item['body']}"
-        chunks = chunk_text(full_text)
+def main():
+    input_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_INPUT_PATH
+    output_path = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_OUTPUT_PATH
 
-        for idx, chunk in enumerate(chunks):
-            chunked_entry = {
-                "id": item["id"],
-                "chunk": chunk,
-                "chunk_id": idx,
-                "source": item["source"]  # keep track of origin (cs, p, ds)
-            }
-            outfile.write(json.dumps(chunked_entry) + "\n")
+    with open(input_path, "r", encoding="utf-8") as f:
+        data = [json.loads(line) for line in f]
 
-print(f"✅ Saved chunked output to {OUTPUT_FILE}")
+    chunks = []
+    for item in tqdm(data, desc="Chunking documents"):
+        qid = item["id"]
+        source = item.get("source", "unknown")
+
+        text = clean_html(item.get("title", "") + "\n\n" + item.get("body", ""))
+        chunked = chunk_text(text)
+
+        for i, c in enumerate(chunked):
+            chunks.append({
+                "id": qid,
+                "chunk_id": i,
+                "chunk": c,
+                "source": source
+            })
+
+    with open(output_path, "w", encoding="utf-8") as out:
+        for chunk in chunks:
+            out.write(json.dumps(chunk) + "\n")
+
+    print(f"✅ Saved {len(chunks)} chunks to {output_path}")
+
+if __name__ == "__main__":
+    main()

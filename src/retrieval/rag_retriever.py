@@ -6,9 +6,9 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-INPUT_PATH = 'data/processed/chunked_documents.jsonl'
+INPUT_PATH = "data/processed/chunked_documents_train.jsonl"
 INDEX_PATH = 'data/processed/faiss_rag.index'
-DOCS_PATH = 'data/processed/rag_docs.jsonl'  # To map FAISS IDs to original chunks
+DOCS_PATH = 'data/processed/rag_docs.jsonl'
 
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
@@ -30,10 +30,11 @@ def main():
             item = json.loads(line)
             chunks.append(item['chunk'])
             metadata.append({
-                'id': item['id'],
+                'id': item.get('id'),
                 'text': item['chunk'],
-                'tags': item['tags'],
-                'label': item['label']
+                'source': item.get('source', 'unknown'),
+                'tags': item.get('tags', None),
+                'label': item.get('label', None)
             })
 
     print(f"Embedding {len(chunks)} chunks...")
@@ -49,9 +50,8 @@ def main():
         for entry in metadata:
             f.write(json.dumps(entry) + '\n')
 
-    print(f"Index saved to {INDEX_PATH}")
-    print(f"Chunk metadata saved to {DOCS_PATH}")
+    print(f"✅ FAISS index saved to {INDEX_PATH}")
+    print(f"📄 Chunk metadata saved to {DOCS_PATH}")
 
 if __name__ == '__main__':
     main()
-

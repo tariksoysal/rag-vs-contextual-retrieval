@@ -1,75 +1,65 @@
 import json
 import os
-import requests
+import multiprocessing
+import time
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from ollama import Client
 
-INPUT_FILE = "data/processed/chunked_documents.jsonl"
-OUTPUT_FILE = "data/processed/chunked_contextual.jsonl"
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "gemma3"
-MAX_WORKERS = 6  # Adjust based on your system's capabilities
+INPUT_PATH = "data/processed/chunked_documents_train.jsonl"
+OUTPUT_PATH = "data/processed/chunked_contextual_train.jsonl"
+MODEL_NAME = "gemma3:latest"
+NUM_WORKERS = 8
 
-PROMPT_TEMPLATE = """You are summarizing a passage for use in document search. Here is a chunk from a longer document. Write a short summary that helps situate this chunk in its original context:
+client = Client()
 
-{chunk}
+def summarize(text):
+    prompt = f"""
+You are a helpful assistant. Your job is to generate a search-optimized summary of a passage.
 
-Summary:"""
+Passage:
+{text.strip()}
 
-def get_summary(chunk_text):
-    prompt = PROMPT_TEMPLATE.format(chunk=chunk_text)
+Summary (one paragraph, suitable for document search):
+"""
+    response = client.chat(model=MODEL_NAME, messages=[
+        {"role": "user", "content": prompt.strip()}
+    ])
+    return response['message']['content'].strip()
+
+def process_chunk(line):
     try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={"model": MODEL, "prompt": prompt, "stream": False},
-            timeout=60
-        )
-        response.raise_for_status()
-        result = response.json()
-        return result.get("response", "").strip()
-    except Exception as e:
-        print(f"⚠️ Error: {e}")
-        return ""
+        item = json.loads(line)
+        summary = summarize(item["chunk"])
+        item["chunk"] = summary
+        return json.dumps(item)
+    except Exception:
+        return None
 
-# Step 1: Load existing output (if any) to avoid recomputing
-processed_ids = set()
-if os.path.exists(OUTPUT_FILE):
-    with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-        for line in f:
-            try:
-                item = json.loads(line)
-                processed_ids.add((item["id"], item["chunk_id"]))
-            except:
-                continue
+def already_processed_chunks(output_file):
+    if not os.path.exists(output_file):
+        return set()
+    with open(output_file, "r", encoding="utf-8") as f:
+        return set((json.loads(line)["id"], json.loads(line).get("chunk_id", 0)) for line in f)
 
-# Step 2: Load all input chunks
-with open(INPUT_FILE, "r", encoding="utf-8") as f:
-    chunks = [json.loads(line) for line in f if line.strip()]
+def main():
+    processed_chunks = already_processed_chunks(OUTPUT_PATH)
 
-# Step 3: Filter only those that haven't been processed
-pending_chunks = [c for c in chunks if (c["id"], c["chunk_id"]) not in processed_ids]
+    with open(INPUT_PATH, "r", encoding="utf-8") as infile:
+        lines = [
+            line for line in infile
+            if (json.loads(line)["id"], json.loads(line).get("chunk_id", 0)) not in processed_chunks
+        ]
 
-print(f"✅ Skipping {len(chunks) - len(pending_chunks)} already processed chunks.")
-print(f"🚀 Generating summaries for {len(pending_chunks)} chunks with {MAX_WORKERS} workers...")
+    print(f"🚀 Generating summaries for {len(lines)} chunks with {NUM_WORKERS} workers...")
 
-# Step 4: Parallel summarization
-with open(OUTPUT_FILE, "a", encoding="utf-8") as outfile:
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {
-            executor.submit(get_summary, item["chunk"]): item
-            for item in pending_chunks
-        }
+    with multiprocessing.Pool(NUM_WORKERS) as pool, open(OUTPUT_PATH, "a", encoding="utf-8") as out:
+        for result in tqdm(pool.imap(process_chunk, lines), total=len(lines), desc="⏱️ Chunking", dynamic_ncols=True):
+            if result:
+                out.write(result + "\n")
 
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Generating summaries"):
-            item = futures[future]
-            summary = future.result()
-            enriched = f"{summary}\n\n{item['chunk']}".strip()
-            enriched_entry = {
-                "id": item["id"],
-                "chunk_id": item["chunk_id"],
-                "source": item["source"],
-                "chunk": enriched
-            }
-            outfile.write(json.dumps(enriched_entry) + "\n")
-
-print(f"✅ All enriched contextual chunks written to {OUTPUT_FILE}")
+if __name__ == "__main__":
+    start = time.time()
+    main()
+    end = time.time()
+    elapsed = end - start
+    print(f"\n✅ Finished in {elapsed / 60:.2f} minutes.")

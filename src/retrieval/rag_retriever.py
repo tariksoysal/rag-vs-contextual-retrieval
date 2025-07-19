@@ -7,18 +7,10 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-INPUT_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data/processed/chunked_documents_train.jsonl"
-)
-INDEX_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data/processed/faiss_rag.index"
-)
-DOCS_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data/processed/rag_docs.jsonl"
-)
+BASE_PATH = Path(__file__).resolve().parent.parent.parent
+INPUT_PATH = BASE_PATH / "data/processed/chunked_documents_train.jsonl"
+INDEX_PATH = BASE_PATH / "data/processed/faiss_rag.index"
+DOCS_PATH = BASE_PATH / "data/processed/rag_docs.jsonl"
 
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 

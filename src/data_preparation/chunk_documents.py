@@ -1,11 +1,18 @@
 import json
 import re
 import sys
+from pathlib import Path
 from tqdm import tqdm
 
 # Defaults (fallback if not provided as CLI args)
-DEFAULT_INPUT_PATH = "data/processed/combined.jsonl"
-DEFAULT_OUTPUT_PATH = "data/processed/chunked_documents.jsonl"
+DEFAULT_INPUT_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/combined.jsonl"
+)
+DEFAULT_OUTPUT_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/chunked_documents.jsonl"
+)
 
 CHUNK_SIZE = 1000  # characters
 

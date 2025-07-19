@@ -1,9 +1,19 @@
 import json
 import random
+from pathlib import Path
 
-INPUT = "data/processed/combined.jsonl"
-TRAIN_OUT = "data/processed/train_questions.jsonl"
-EVAL_OUT = "data/processed/eval_questions_raw.jsonl"
+INPUT = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/combined.jsonl"
+)
+TRAIN_OUT = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/train_questions.jsonl"
+)
+EVAL_OUT = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/eval_questions_raw.jsonl"
+)
 
 random.seed(42)
 

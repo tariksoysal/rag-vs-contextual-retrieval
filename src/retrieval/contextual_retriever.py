@@ -2,13 +2,23 @@
 
 import json
 import os
+from pathlib import Path
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-INPUT_PATH = 'data/processed/chunked_contextual.jsonl'
-INDEX_PATH = 'data/processed/faiss_contextual.index'
-DOCS_PATH = 'data/processed/contextual_docs.jsonl'
+INPUT_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/chunked_contextual.jsonl"
+)
+INDEX_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/faiss_contextual.index"
+)
+DOCS_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/contextual_docs.jsonl"
+)
 
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
@@ -42,8 +52,8 @@ def main():
     print("Building FAISS index...")
     index = build_index(embeddings)
 
-    os.makedirs(os.path.dirname(INDEX_PATH), exist_ok=True)
-    faiss.write_index(index, INDEX_PATH)
+    INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
+    faiss.write_index(index, str(INDEX_PATH))
 
     with open(DOCS_PATH, 'w', encoding='utf-8') as f:
         for entry in metadata:

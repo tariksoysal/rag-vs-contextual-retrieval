@@ -1,7 +1,6 @@
 from sentence_transformers import SentenceTransformer
 import faiss
 import json
-import numpy as np
 
 INDEX_PATH = 'data/processed/faiss_contextual.index'
 DOCS_PATH = 'data/processed/contextual_docs.jsonl'

@@ -1,7 +1,6 @@
 import gradio as gr
 import faiss
 import json
-import numpy as np
 import re
 import html
 import time

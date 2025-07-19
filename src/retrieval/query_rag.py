@@ -19,7 +19,7 @@ INDEX_PATH = 'data/processed/faiss_rag.index'
 DOCS_PATH = 'data/processed/rag_docs.jsonl'
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 TOP_K = 10
-OLLAMA_MODEL = "gemma3:latest"  # Or change to llama3.2:latest if needed
+OLLAMA_MODEL = "gemma3:latest"  # Or change to llama3:latest if needed
 
 def load_documents(path):
     with open(path, 'r', encoding='utf-8') as f:

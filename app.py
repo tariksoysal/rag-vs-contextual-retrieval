@@ -11,6 +11,7 @@ from src.generation.generate_answers import generate_answer
 RAG_INDEX_PATH = 'data/processed/faiss_rag.index'
 CTX_INDEX_PATH = 'data/processed/faiss_contextual.index'
 DOCS_PATH = 'data/processed/rag_docs.jsonl'
+CTX_DOCS_PATH = 'data/processed/contextual_docs.jsonl'
 LOG_PATH = "evaluation_logs.jsonl"
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 TOP_K = 5
@@ -25,7 +26,10 @@ contextual_index = faiss.read_index(CTX_INDEX_PATH)
 
 # === Load chunk metadata ===
 with open(DOCS_PATH, 'r', encoding='utf-8') as f:
-    docs = [json.loads(line) for line in f]
+    rag_docs = [json.loads(line) for line in f]
+
+with open(CTX_DOCS_PATH, 'r', encoding='utf-8') as f:
+    ctx_docs = [json.loads(line) for line in f]
 
 # === Preload gold answers (from prior eval logs) ===
 gold_answers = {}
@@ -42,10 +46,10 @@ except FileNotFoundError:
 def clean_html(text):
     return re.sub(r'<.*?>|&#xA;|&nbsp;|&quot;|&amp;', '', text)
 
-def search_index(query, index):
+def search_index(query, index, docs_list):
     query_vec = model.encode([query], convert_to_numpy=True)
     distances, indices = index.search(query_vec, TOP_K)
-    results = [docs[i] for i in indices[0]]
+    results = [docs_list[i] for i in indices[0]]
     return results
 
 def jaccard(a, b):
@@ -67,7 +71,7 @@ def run_eval(gold_answer, chunks):
 def run_rag(query, evaluate):
     gold = gold_answers.get(query)
     start = time.time()
-    retrieved = search_index(query, rag_index)
+    retrieved = search_index(query, rag_index, rag_docs)
     chunks = [clean_html(r.get("chunk", r.get("text", ""))) for r in retrieved]
     answer = generate_answer(query, retrieved, model=OLLAMA_MODEL)
     duration = round(time.time() - start, 2)
@@ -85,7 +89,7 @@ def run_rag(query, evaluate):
 def run_contextual(query, evaluate):
     gold = gold_answers.get(query)
     start = time.time()
-    retrieved = search_index(query, contextual_index)
+    retrieved = search_index(query, contextual_index, ctx_docs)
     chunks = [clean_html(r.get("chunk", r.get("text", ""))) for r in retrieved]
     answer = generate_answer(query, retrieved, model=OLLAMA_MODEL)
     duration = round(time.time() - start, 2)

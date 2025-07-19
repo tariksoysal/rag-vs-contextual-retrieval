@@ -53,7 +53,7 @@ def main():
     print(f"🚀 Generating summaries for {len(lines)} chunks with {NUM_WORKERS} workers...")
 
     with multiprocessing.Pool(NUM_WORKERS) as pool, open(OUTPUT_PATH, "a", encoding="utf-8") as out:
-        for result in tqdm(pool.imap(process_chunk, lines), total=len(lines), desc="⏱️ Chunking", dynamic_ncols=True):
+        for result in tqdm(pool.imap(process_chunk, lines), total=len(lines), desc="⏱️ Summarizing", dynamic_ncols=True):
             if result:
                 out.write(result + "\n")
 

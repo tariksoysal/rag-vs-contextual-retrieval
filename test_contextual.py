@@ -1,28 +1,24 @@
-from sentence_transformers import SentenceTransformer
-import faiss
-import json
+import pytest
 import numpy as np
 
-INDEX_PATH = 'data/processed/faiss_contextual.index'
-DOCS_PATH = 'data/processed/contextual_docs.jsonl'
-EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
+faiss = pytest.importorskip("faiss")
 
-# Load index + model
-model = SentenceTransformer(EMBED_MODEL_NAME)
-index = faiss.read_index(INDEX_PATH)
 
-# Load metadata
-with open(DOCS_PATH, 'r', encoding='utf-8') as f:
-    docs = [json.loads(line) for line in f]
+def build_test_index():
+    docs = [{"chunk": f"chunk {i}"} for i in range(5)]
+    embeddings = np.stack([np.array([float(i), float(i)], dtype="float32") for i in range(5)])
+    index = faiss.IndexFlatL2(2)
+    index.add(embeddings)
+    return index, docs, embeddings
 
-def retrieve(query, top_k=5):
-    vec = model.encode([query], convert_to_numpy=True)
-    scores, indices = index.search(vec, top_k)
-    return [docs[i] for i in indices[0]]
 
-# Example query
-query = "What are the differences between PCA and L1 regularization?"
-results = retrieve(query)
+def search_index(vec, index, docs, k):
+    _, idx = index.search(np.array([vec], dtype="float32"), k)
+    return [docs[i] for i in idx[0]]
 
-for i, r in enumerate(results, 1):
-    print(f"\n--- Result {i} ---\n{r['chunk']}\n")
+
+def test_contextual_retrieval():
+    index, docs, embeddings = build_test_index()
+    results = search_index(embeddings[0], index, docs, k=3)
+    assert len(results) == 3
+    assert all("chunk" in r for r in results)

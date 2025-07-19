@@ -46,10 +46,7 @@ def already_processed_chunks(output_file: Path):
     if not output_file.exists():
         return set()
     with open(output_file, "r", encoding="utf-8") as f:
-        return set(
-            (json.loads(line)["id"], json.loads(line).get("chunk_id", 0))
-            for line in f
-        )
+        return set((json.loads(line)["id"], json.loads(line).get("chunk_id", 0)) for line in f)
 
 def main():
     processed_chunks = already_processed_chunks(OUTPUT_PATH)

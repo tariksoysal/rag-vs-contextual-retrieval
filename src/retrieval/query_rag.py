@@ -2,6 +2,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 # Add project root to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -15,8 +16,14 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from src.generation.generate_answers import generate_answer
 
-INDEX_PATH = 'data/processed/faiss_rag.index'
-DOCS_PATH = 'data/processed/rag_docs.jsonl'
+INDEX_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/faiss_rag.index"
+)
+DOCS_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/rag_docs.jsonl"
+)
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 TOP_K = 10
 OLLAMA_MODEL = "gemma3:latest"  # Or change to llama3.2:latest if needed
@@ -34,7 +41,7 @@ def search_index(query, model, index, docs, k=TOP_K):
 def main():
     print("Loading index and model...")
     model = SentenceTransformer(EMBED_MODEL_NAME)
-    index = faiss.read_index(INDEX_PATH)
+    index = faiss.read_index(str(INDEX_PATH))
     docs = load_documents(DOCS_PATH)
 
     while True:

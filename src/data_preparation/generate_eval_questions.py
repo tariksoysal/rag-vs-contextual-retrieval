@@ -1,8 +1,15 @@
 import json
 from collections import defaultdict
+from pathlib import Path
 
-EVAL_CHUNKED = "data/processed/chunked_documents_eval.jsonl"
-EVAL_OUTPUT = "data/processed/eval_questions.jsonl"
+EVAL_CHUNKED = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/chunked_documents_eval.jsonl"
+)
+EVAL_OUTPUT = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data/processed/eval_questions.jsonl"
+)
 
 # Group chunks by question ID
 by_question = defaultdict(list)

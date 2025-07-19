@@ -9,12 +9,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 
 from src.generation.generate_answers import generate_answer
 
-
 import faiss
 import json
-import numpy as np
 from sentence_transformers import SentenceTransformer
-from src.generation.generate_answers import generate_answer
 
 INDEX_PATH = (
     Path(__file__).resolve().parent.parent.parent

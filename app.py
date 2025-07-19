@@ -58,9 +58,22 @@ def search_index(query, index, docs):
     return results
 
 def jaccard(a, b):
-    """Compute Jaccard similarity between two strings safely."""
-    a_set = set(str(a).lower().split())
-    b_set = set(str(b).lower().split())
+    """Compute Jaccard similarity between two strings.
+    
+    Args:
+        a (str): The first string.
+        b (str): The second string.
+    
+    Returns:
+        float: The Jaccard similarity between the two strings.
+    
+    Raises:
+        TypeError: If either `a` or `b` is not a string.
+    """
+    if not isinstance(a, str) or not isinstance(b, str):
+        raise TypeError("Both inputs to the jaccard function must be strings.")
+    a_set = set(a.lower().split())
+    b_set = set(b.lower().split())
     union = a_set | b_set
     if not union:
         return 0.0

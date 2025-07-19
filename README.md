@@ -24,7 +24,7 @@ query both pipelines side by side.
    python src/data_preparation/chunk_documents_contextual.py
 
    # Split the chunked data into train and eval sets
-   python split_eval_set.py
+   python src/data_preparation/split_eval_set.py
 
    # Build retrieval indexes
    python src/retrieval/rag_retriever.py

@@ -3,6 +3,7 @@ import faiss
 import json
 import numpy as np
 import re
+import html
 import time
 from sentence_transformers import SentenceTransformer, util
 from src.generation.generate_answers import generate_answer
@@ -10,7 +11,8 @@ from src.generation.generate_answers import generate_answer
 # === Config ===
 RAG_INDEX_PATH = 'data/processed/faiss_rag.index'
 CTX_INDEX_PATH = 'data/processed/faiss_contextual.index'
-DOCS_PATH = 'data/processed/rag_docs.jsonl'
+RAG_DOCS_PATH = 'data/processed/rag_docs.jsonl'
+CTX_DOCS_PATH = 'data/processed/contextual_docs.jsonl'
 LOG_PATH = "evaluation_logs.jsonl"
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 TOP_K = 5
@@ -24,8 +26,11 @@ rag_index = faiss.read_index(RAG_INDEX_PATH)
 contextual_index = faiss.read_index(CTX_INDEX_PATH)
 
 # === Load chunk metadata ===
-with open(DOCS_PATH, 'r', encoding='utf-8') as f:
-    docs = [json.loads(line) for line in f]
+with open(RAG_DOCS_PATH, 'r', encoding='utf-8') as f:
+    rag_docs = [json.loads(line) for line in f]
+
+with open(CTX_DOCS_PATH, 'r', encoding='utf-8') as f:
+    contextual_docs = [json.loads(line) for line in f]
 
 # === Preload gold answers (from prior eval logs) ===
 gold_answers = {}
@@ -40,18 +45,39 @@ except FileNotFoundError:
 
 # === Utility functions ===
 def clean_html(text):
-    return re.sub(r'<.*?>|&#xA;|&nbsp;|&quot;|&amp;', '', text)
+    """Strip HTML tags and unescape entities."""
+    if not isinstance(text, str):
+        return ""
+    no_tags = re.sub(r"<[^>]*>", "", text)
+    return html.unescape(no_tags)
 
-def search_index(query, index):
+def search_index(query, index, docs):
     query_vec = model.encode([query], convert_to_numpy=True)
     distances, indices = index.search(query_vec, TOP_K)
     results = [docs[i] for i in indices[0]]
     return results
 
 def jaccard(a, b):
+    """Compute Jaccard similarity between two strings.
+    
+    Args:
+        a (str): The first string.
+        b (str): The second string.
+    
+    Returns:
+        float: The Jaccard similarity between the two strings.
+    
+    Raises:
+        TypeError: If either `a` or `b` is not a string.
+    """
+    if not isinstance(a, str) or not isinstance(b, str):
+        raise TypeError("Both inputs to the jaccard function must be strings.")
     a_set = set(a.lower().split())
     b_set = set(b.lower().split())
-    return len(a_set & b_set) / len(a_set | b_set)
+    union = a_set | b_set
+    if not union:
+        return 0.0
+    return len(a_set & b_set) / len(union)
 
 def run_eval(gold_answer, chunks):
     keyword_hits = 0
@@ -67,7 +93,7 @@ def run_eval(gold_answer, chunks):
 def run_rag(query, evaluate):
     gold = gold_answers.get(query)
     start = time.time()
-    retrieved = search_index(query, rag_index)
+    retrieved = search_index(query, rag_index, rag_docs)
     chunks = [clean_html(r.get("chunk", r.get("text", ""))) for r in retrieved]
     answer = generate_answer(query, retrieved, model=OLLAMA_MODEL)
     duration = round(time.time() - start, 2)
@@ -85,7 +111,7 @@ def run_rag(query, evaluate):
 def run_contextual(query, evaluate):
     gold = gold_answers.get(query)
     start = time.time()
-    retrieved = search_index(query, contextual_index)
+    retrieved = search_index(query, contextual_index, contextual_docs)
     chunks = [clean_html(r.get("chunk", r.get("text", ""))) for r in retrieved]
     answer = generate_answer(query, retrieved, model=OLLAMA_MODEL)
     duration = round(time.time() - start, 2)

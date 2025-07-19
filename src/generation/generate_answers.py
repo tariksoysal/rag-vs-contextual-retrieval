@@ -4,10 +4,14 @@ import json
 import subprocess
 
 import re
+import html
 
 def clean_html(text):
-    # Basic HTML & entity cleanup
-    return re.sub(r'<.*?>|&#xA;|&nbsp;|&quot;|&amp;', '', text)
+    """Remove HTML tags and decode common entities."""
+    if not isinstance(text, str):
+        return ""
+    no_tags = re.sub(r"<[^>]*>", "", text)
+    return html.unescape(no_tags)
 
 def format_prompt(context_chunks, query):
     context_text = "\n\n".join([clean_html(c['text']) for c in context_chunks])

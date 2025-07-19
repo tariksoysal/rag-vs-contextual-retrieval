@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import faiss
-import numpy as np
 from sentence_transformers import SentenceTransformer
 
 INPUT_PATH = (

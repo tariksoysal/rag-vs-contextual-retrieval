@@ -6,7 +6,7 @@ Prototype comparing Retrieval-Augmented Generation and Contextual Retrieval for 
 This project is licensed under the [MIT License](LICENSE).
 
 ## Generating retrieval indexes
-The FAISS index and metadata files used by the tests are not committed to Git. Generate them by running:
+The FAISS index and metadata files used by the examples are not committed to Git. Generate them by running:
 
 ```bash
 python src/retrieval/rag_retriever.py

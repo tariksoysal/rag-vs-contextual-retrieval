@@ -1,3 +1,5 @@
+"""Generate LLM summaries for document chunks to build a contextual index."""
+
 import json
 import os
 import multiprocessing
@@ -6,6 +8,8 @@ from pathlib import Path
 from tqdm import tqdm
 from ollama import Client
 
+# Input chunks come from the basic chunking step; we will write new summarized
+# chunks suitable for the contextual retrieval pipeline.
 INPUT_PATH = (
     Path(__file__).resolve().parent.parent.parent
     / "data/processed/chunked_documents_train.jsonl"
@@ -20,6 +24,7 @@ NUM_WORKERS = 8
 client = Client()
 
 def summarize(text):
+    """Ask the Ollama model for a search‑optimized summary of ``text``."""
     prompt = f"""
 You are a helpful assistant. Your job is to generate a search-optimized summary of a passage.
 
@@ -34,6 +39,7 @@ Summary (one paragraph, suitable for document search):
     return response['message']['content'].strip()
 
 def process_chunk(line):
+    """Summarize a single JSONL line representing a chunk."""
     try:
         item = json.loads(line)
         summary = summarize(item["chunk"])
@@ -43,6 +49,7 @@ def process_chunk(line):
         return None
 
 def already_processed_chunks(output_file: Path):
+    """Return a set of (id, chunk_id) pairs already written to ``output_file``."""
     if not output_file.exists():
         return set()
     with open(output_file, "r", encoding="utf-8") as f:
@@ -51,6 +58,7 @@ def already_processed_chunks(output_file: Path):
 def main():
     processed_chunks = already_processed_chunks(OUTPUT_PATH)
 
+    # Filter out chunks we've already summarized so the script can be resumed
     with open(INPUT_PATH, "r", encoding="utf-8") as infile:
         lines = [
             line for line in infile

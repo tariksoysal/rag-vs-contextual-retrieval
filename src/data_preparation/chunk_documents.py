@@ -1,3 +1,5 @@
+"""Chunk raw documents into fixed-size pieces for later indexing."""
+
 import json
 import re
 import sys
@@ -17,14 +19,17 @@ DEFAULT_OUTPUT_PATH = (
 CHUNK_SIZE = 1000  # characters
 
 def clean_html(text):
+    """Remove simple HTML markup and whitespace noise."""
     text = re.sub(r'<[^>]+>', '', text)  # remove HTML tags
     text = re.sub(r'&#xA;|&nbsp;', ' ', text)  # replace common HTML entities
     return text.strip()
 
 def chunk_text(text, chunk_size=CHUNK_SIZE):
+    """Split ``text`` into roughly ``chunk_size`` character pieces."""
     return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
 def main():
+    """Load the dataset, clean it and emit chunked JSON lines."""
     input_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_INPUT_PATH
     output_path = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_OUTPUT_PATH
 

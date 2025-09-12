@@ -1,3 +1,5 @@
+"""Evaluate contextual retrieval using recall and MRR metrics."""
+
 import json
 import faiss
 from sentence_transformers import SentenceTransformer
@@ -9,13 +11,13 @@ EVAL_PATH = "data/processed/eval_questions.jsonl"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 TOP_K = 5
 
-# Load FAISS index and metadata
+# Load FAISS index and metadata for contextual summaries
 index = faiss.read_index(INDEX_PATH)
 with open(DOCS_PATH, "r", encoding="utf-8") as f:
     docs = [json.loads(line) for line in f]
 doc_lookup = {(doc["id"], doc.get("chunk_id", 0)): i for i, doc in enumerate(docs)}
 
-# Load eval questions
+# Load evaluation questions
 with open(EVAL_PATH, "r", encoding="utf-8") as f:
     eval_data = [json.loads(line) for line in f]
 
@@ -36,11 +38,11 @@ for example in tqdm(eval_data, desc=f"Evaluating Recall@1 + Recall@{TOP_K} + MRR
     if retrieved[0] in gold_ids:
         recall_at_1 += 1
 
-    # Recall@K
+    # Recall@K – did we retrieve any relevant chunk?
     if gold_ids & set(retrieved):
         recall_at_k += 1
 
-    # MRR@K
+    # MRR@K – add the reciprocal rank of the first relevant chunk
     for rank, result in enumerate(retrieved, 1):
         if result in gold_ids:
             mrr += 1 / rank

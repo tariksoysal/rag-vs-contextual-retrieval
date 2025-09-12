@@ -1,3 +1,5 @@
+"""Evaluate RAG retrieval using recall and MRR metrics and show examples."""
+
 import json
 import faiss
 from sentence_transformers import SentenceTransformer
@@ -36,11 +38,11 @@ for example in tqdm(eval_data, desc=f"Evaluating Recall@1 + Recall@{TOP_K} + MRR
     if retrieved[0] in gold_ids:
         recall_at_1 += 1
 
-    # Recall@K
+    # Recall@K – at least one relevant chunk retrieved
     if gold_ids & set(retrieved):
         recall_at_k += 1
 
-    # MRR@K
+    # MRR@K – reciprocal rank of the first relevant chunk
     for rank, result in enumerate(retrieved, 1):
         if result in gold_ids:
             mrr += 1 / rank

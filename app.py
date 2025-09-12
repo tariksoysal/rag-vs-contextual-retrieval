@@ -1,3 +1,16 @@
+"""Interactive demo comparing RAG and contextual retrieval pipelines.
+
+This module exposes a small Gradio application that lets a user query two
+different retrieval strategies side by side:
+
+* **RAG** – vanilla retrieval over raw document chunks.
+* **Contextual** – retrieval over LLM‑generated summaries of those chunks.
+
+It loads prebuilt FAISS indexes, retrieves the top chunks for each approach and
+generates answers using an Ollama model.  Optional evaluation against a set of
+gold answers is also provided.
+"""
+
 import gradio as gr
 import faiss
 import json
@@ -51,6 +64,7 @@ def clean_html(text):
     return html.unescape(no_tags)
 
 def search_index(query, index, docs):
+    """Retrieve the top document chunks for *query* from a FAISS index."""
     query_vec = model.encode([query], convert_to_numpy=True)
     distances, indices = index.search(query_vec, TOP_K)
     results = [docs[i] for i in indices[0]]
@@ -79,6 +93,7 @@ def jaccard(a, b):
     return len(a_set & b_set) / len(union)
 
 def run_eval(gold_answer, chunks):
+    """Calculate keyword and semantic recall for a set of retrieved chunks."""
     keyword_hits = 0
     gold_emb = model.encode(gold_answer, convert_to_tensor=True)
     chunk_embs = model.encode(chunks, convert_to_tensor=True)
@@ -90,6 +105,11 @@ def run_eval(gold_answer, chunks):
     return keyword_hits, semantic_hits
 
 def run_rag(query, evaluate):
+    """Execute the classic RAG pipeline for *query*.
+
+    Retrieves raw document chunks, generates an answer and optionally
+    evaluates the retrieved chunks against a gold answer.
+    """
     gold = gold_answers.get(query)
     start = time.time()
     retrieved = search_index(query, rag_index, rag_docs)
@@ -108,6 +128,11 @@ def run_rag(query, evaluate):
     return answer.strip(), sources, metrics
 
 def run_contextual(query, evaluate):
+    """Execute the contextual retrieval pipeline for *query*.
+
+    This workflow searches an index built from LLM‑generated summaries of
+    document chunks.  The rest mirrors :func:`run_rag`.
+    """
     gold = gold_answers.get(query)
     start = time.time()
     retrieved = search_index(query, contextual_index, contextual_docs)

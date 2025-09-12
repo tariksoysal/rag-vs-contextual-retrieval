@@ -1,3 +1,5 @@
+"""Minimal example demonstrating contextual retrieval over summaries."""
+
 from sentence_transformers import SentenceTransformer
 import faiss
 import json
@@ -10,11 +12,12 @@ EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 model = SentenceTransformer(EMBED_MODEL_NAME)
 index = faiss.read_index(INDEX_PATH)
 
-# Load metadata
+# Load metadata containing LLM summaries
 with open(DOCS_PATH, 'r', encoding='utf-8') as f:
     docs = [json.loads(line) for line in f]
 
 def retrieve(query, top_k=5):
+    """Return summarized chunks for ``query`` from the contextual index."""
     vec = model.encode([query], convert_to_numpy=True)
     scores, indices = index.search(vec, top_k)
     return [docs[i] for i in indices[0]]

@@ -1,3 +1,11 @@
+"""Split processed chunks into train and evaluation sets.
+
+The script groups all chunked documents by their original question ID and then
+randomly selects a portion of those IDs for evaluation.  Chunks belonging to the
+selected IDs are written to ``eval_questions.jsonl`` as evaluation entries,
+while the remainder are saved for training.
+"""
+
 import json
 import random
 from collections import defaultdict
@@ -8,7 +16,8 @@ EVAL_OUT = "data/processed/eval_questions.jsonl"
 
 SPLIT_RATIO = 0.1  # 10% for evaluation
 
-# Group chunks by question ID
+# Group chunks by question ID so we can split on full questions rather than
+# individual chunks.
 by_id = defaultdict(list)
 with open(INPUT_PATH, "r", encoding="utf-8") as f:
     for line in f:
@@ -24,8 +33,10 @@ with open(TRAIN_OUT, "w", encoding="utf-8") as train_f, \
 
     for qid, chunks in by_id.items():
         if qid in eval_ids:
+            # Build a minimal evaluation entry consisting of the question and
+            # IDs of relevant chunks.
             eval_entry = {
-                "question": chunks[0]["chunk"].split('\n')[-1][:300],  # crude title guess
+                "question": chunks[0]["chunk"].split('\n')[-1][:300],
                 "relevant_chunk_ids": [c["chunk_id"] for c in chunks],
                 "id": qid
             }

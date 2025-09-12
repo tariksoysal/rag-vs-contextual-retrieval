@@ -1,4 +1,4 @@
-# src/retrieval/query_rag.py
+"""Interactive CLI to query the RAG index and generate answers."""
 
 import os
 import sys
@@ -26,10 +26,12 @@ TOP_K = 10
 OLLAMA_MODEL = "gemma3:latest"  # Or change to llama3.2:latest if needed
 
 def load_documents(path):
+    """Read chunk metadata from disk."""
     with open(path, 'r', encoding='utf-8') as f:
         return [json.loads(line) for line in f]
 
 def search_index(query, model, index, docs, k=TOP_K):
+    """Return top ``k`` document chunks and their distances for ``query``."""
     query_vec = model.encode([query], convert_to_numpy=True)
     distances, indices = index.search(query_vec, k)
     results = [docs[i] for i in indices[0]]

@@ -1,4 +1,4 @@
-# src/retrieval/contextual_retriever.py
+"""Build a FAISS index over LLM‑generated contextual summaries."""
 
 import json
 import os
@@ -22,9 +22,11 @@ DOCS_PATH = (
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
 def embed_chunks(chunks, model):
+    """Encode chunks into embeddings using the sentence transformer."""
     return model.encode(chunks, show_progress_bar=True, convert_to_numpy=True)
 
 def build_index(embeddings):
+    """Create a simple L2 FAISS index from ``embeddings``."""
     dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
     index.add(embeddings)
@@ -40,7 +42,7 @@ def main():
             chunks.append(item['chunk'])
             metadata.append({
                 'id': item['id'],
-                'text': item['chunk'],  # this will include title now
+                'text': item['chunk'],  # already a summary
                 'tags': item['tags'],
                 'label': item['label']
             })

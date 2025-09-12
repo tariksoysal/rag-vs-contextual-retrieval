@@ -1,4 +1,4 @@
-# src/retrieval/rag_retriever.py
+"""Construct a FAISS index over raw document chunks for RAG retrieval."""
 
 import json
 import os
@@ -14,9 +14,11 @@ DOCS_PATH = BASE_PATH / "data/processed/rag_docs.jsonl"
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
 def embed_chunks(chunks, model):
+    """Encode raw chunks into embeddings."""
     return model.encode(chunks, show_progress_bar=True, convert_to_numpy=True)
 
 def build_index(embeddings):
+    """Create an L2 FAISS index from the given embeddings."""
     dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
     index.add(embeddings)

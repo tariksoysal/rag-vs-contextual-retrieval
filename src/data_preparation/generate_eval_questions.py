@@ -1,3 +1,5 @@
+"""Create evaluation questions and relevant chunk IDs from chunked data."""
+
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -11,7 +13,8 @@ EVAL_OUTPUT = (
     / "data/processed/eval_questions.jsonl"
 )
 
-# Group chunks by question ID
+# Group chunks by question ID so we know which chunks are relevant for each
+# evaluation query.
 by_question = defaultdict(list)
 
 with open(EVAL_CHUNKED, "r", encoding="utf-8") as f:
@@ -19,7 +22,7 @@ with open(EVAL_CHUNKED, "r", encoding="utf-8") as f:
         item = json.loads(line)
         by_question[item["id"]].append(item)
 
-# Save one eval question per post
+# Save one eval question per post along with the relevant chunk IDs
 with open(EVAL_OUTPUT, "w", encoding="utf-8") as out:
     for qid, chunks in by_question.items():
         question = chunks[0]["chunk"].split('\n')[-1][:300]

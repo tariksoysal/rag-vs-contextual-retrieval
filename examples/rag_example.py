@@ -1,3 +1,5 @@
+"""Minimal example showing how to query the RAG FAISS index."""
+
 from sentence_transformers import SentenceTransformer
 import faiss
 import json
@@ -6,15 +8,16 @@ INDEX_PATH = 'data/processed/faiss_rag.index'
 DOCS_PATH = 'data/processed/rag_docs.jsonl'
 EMBED_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
-# Load index + model
+# Load index + model once at startup
 model = SentenceTransformer(EMBED_MODEL_NAME)
 index = faiss.read_index(INDEX_PATH)
 
-# Load metadata
+# Load chunk metadata so we can map retrieved indices back to text
 with open(DOCS_PATH, 'r', encoding='utf-8') as f:
     docs = [json.loads(line) for line in f]
 
 def retrieve(query, top_k=5):
+    """Return the top ``top_k`` raw document chunks for ``query``."""
     vec = model.encode([query], convert_to_numpy=True)
     scores, indices = index.search(vec, top_k)
     return [docs[i] for i in indices[0]]

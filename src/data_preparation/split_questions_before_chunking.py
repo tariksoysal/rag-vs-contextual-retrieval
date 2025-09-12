@@ -1,7 +1,10 @@
+"""Split raw Q&A posts into training and evaluation question sets."""
+
 import json
 import random
 from pathlib import Path
 
+# Paths to the combined dataset and output files
 INPUT = (
     Path(__file__).resolve().parent.parent.parent
     / "data/processed/combined.jsonl"
@@ -17,6 +20,7 @@ EVAL_OUT = (
 
 random.seed(42)
 
+# Load and shuffle the posts so that the split is random
 with open(INPUT, "r", encoding="utf-8") as f:
     data = [json.loads(line) for line in f]
 
@@ -24,6 +28,7 @@ random.shuffle(data)
 split_idx = int(0.9 * len(data))
 train, eval = data[:split_idx], data[split_idx:]
 
+# Write the resulting partitions to disk
 with open(TRAIN_OUT, "w", encoding="utf-8") as f:
     for item in train:
         f.write(json.dumps(item) + "\n")
